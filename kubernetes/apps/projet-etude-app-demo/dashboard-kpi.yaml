@@ -1,0 +1,322 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: projet-etude-app-demo-kpi-dashboard
+  labels:
+    grafana_dashboard: "1"
+data:
+  app-demo-kpi.json: |
+    {
+      "title": "App demo — KPI (métier, SRE, DORA, green IT)",
+      "uid": "projet-etude-app-demo-kpi",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "1m",
+      "time": { "from": "now-7d", "to": "now" },
+      "tags": ["projet-etude", "kpi"],
+      "timezone": "browser",
+      "panels": [
+        {
+          "id": 100, "type": "row", "title": "Métier — incidents",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "collapsed": false
+        },
+        {
+          "id": 1, "type": "stat", "title": "Incidents ouverts (now)",
+          "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 25 },
+            { "color": "red", "value": 50 }
+          ] } } },
+          "options": { "colorMode": "background", "graphMode": "area" },
+          "targets": [
+            { "expr": "max(tickets_open{namespace=\"projet-etude-app-demo\"})", "refId": "A", "instant": true }
+          ]
+        },
+        {
+          "id": 2, "type": "stat", "title": "Créés (7j)",
+          "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            { "expr": "sum(increase(tickets_created_total{namespace=\"projet-etude-app-demo\"}[7d]))", "refId": "A", "instant": true }
+          ]
+        },
+        {
+          "id": 3, "type": "stat", "title": "Clôturés (7j)",
+          "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            { "expr": "sum(increase(tickets_closed_total{namespace=\"projet-etude-app-demo\"}[7d]))", "refId": "A", "instant": true }
+          ]
+        },
+        {
+          "id": 4, "type": "stat", "title": "Taux de résolution (7j)",
+          "description": "Clôturés / créés sur 7 jours. >100% = on rattrape le backlog.",
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "unit": "percentunit", "decimals": 1, "thresholds": { "mode": "absolute", "steps": [
+            { "color": "red", "value": null },
+            { "color": "yellow", "value": 0.8 },
+            { "color": "green", "value": 1.0 }
+          ] } } },
+          "options": { "colorMode": "background" },
+          "targets": [
+            { "expr": "sum(increase(tickets_closed_total{namespace=\"projet-etude-app-demo\"}[7d])) / clamp_min(sum(increase(tickets_created_total{namespace=\"projet-etude-app-demo\"}[7d])), 1)", "refId": "A", "instant": true }
+          ]
+        },
+        {
+          "id": 5, "type": "stat", "title": "Croissance backlog (7j)",
+          "description": "Créés - clôturés. Positif = backlog grandit.",
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 1 },
+            { "color": "red", "value": 10 }
+          ] } } },
+          "options": { "colorMode": "background" },
+          "targets": [
+            { "expr": "sum(increase(tickets_created_total{namespace=\"projet-etude-app-demo\"}[7d])) - sum(increase(tickets_closed_total{namespace=\"projet-etude-app-demo\"}[7d]))", "refId": "A", "instant": true }
+          ]
+        },
+        {
+          "id": 6, "type": "timeseries", "title": "Flux incidents — créés vs clôturés (par heure)",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            { "expr": "sum(rate(tickets_created_total{namespace=\"projet-etude-app-demo\"}[1h])) * 3600", "legendFormat": "créés/h", "refId": "A" },
+            { "expr": "sum(rate(tickets_closed_total{namespace=\"projet-etude-app-demo\"}[1h])) * 3600", "legendFormat": "clôturés/h", "refId": "B" }
+          ]
+        },
+        {
+          "id": 7, "type": "timeseries", "title": "Créations par priorité",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            { "expr": "sum by (priority) (rate(tickets_created_total{namespace=\"projet-etude-app-demo\"}[5m])) * 60", "legendFormat": "{{priority}}", "refId": "A" }
+          ]
+        },
+
+        {
+          "id": 200, "type": "row", "title": "SRE — fiabilité & saturation",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 13 }, "collapsed": false
+        },
+        {
+          "id": 10, "type": "stat", "title": "Disponibilité 30j",
+          "gridPos": { "h": 4, "w": 5, "x": 0, "y": 14 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "unit": "percentunit", "decimals": 4, "thresholds": { "mode": "absolute", "steps": [
+            { "color": "red", "value": null },
+            { "color": "yellow", "value": 0.99 },
+            { "color": "green", "value": 0.995 }
+          ] } } },
+          "options": { "colorMode": "background", "graphMode": "area" },
+          "targets": [
+            { "expr": "1 - (sum(rate(http_requests_total{namespace=\"projet-etude-app-demo\",status=~\"5..\"}[30d])) / clamp_min(sum(rate(http_requests_total{namespace=\"projet-etude-app-demo\"}[30d])), 0.001))", "refId": "A", "instant": true }
+          ]
+        },
+        {
+          "id": 11, "type": "stat", "title": "Error budget restant (30j)",
+          "gridPos": { "h": 4, "w": 5, "x": 5, "y": 14 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "unit": "percentunit", "decimals": 1, "thresholds": { "mode": "absolute", "steps": [
+            { "color": "red", "value": null },
+            { "color": "yellow", "value": 0.2 },
+            { "color": "green", "value": 0.5 }
+          ] } } },
+          "options": { "colorMode": "background", "graphMode": "area" },
+          "targets": [
+            { "expr": "1 - ((sum(rate(http_requests_total{namespace=\"projet-etude-app-demo\",status=~\"5..\"}[30d])) / clamp_min(sum(rate(http_requests_total{namespace=\"projet-etude-app-demo\"}[30d])), 0.001)) / 0.005)", "refId": "A", "instant": true }
+          ]
+        },
+        {
+          "id": 12, "type": "stat", "title": "Latence p95 (5m)",
+          "gridPos": { "h": 4, "w": 4, "x": 10, "y": 14 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "unit": "s", "decimals": 3, "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 0.5 },
+            { "color": "red", "value": 1 }
+          ] } } },
+          "options": { "colorMode": "background" },
+          "targets": [
+            { "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{namespace=\"projet-etude-app-demo\"}[5m])))", "refId": "A", "instant": true }
+          ]
+        },
+        {
+          "id": 13, "type": "stat", "title": "Pods Ready (app demo)",
+          "gridPos": { "h": 4, "w": 5, "x": 14, "y": 14 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "unit": "percentunit", "decimals": 2, "thresholds": { "mode": "absolute", "steps": [
+            { "color": "red", "value": null },
+            { "color": "yellow", "value": 0.8 },
+            { "color": "green", "value": 1 }
+          ] } } },
+          "options": { "colorMode": "background" },
+          "targets": [
+            { "expr": "sum(kube_pod_status_ready{namespace=\"projet-etude-app-demo\",condition=\"true\"}) / clamp_min(sum(kube_pod_status_phase{namespace=\"projet-etude-app-demo\",phase=\"Running\"}), 1)", "refId": "A", "instant": true }
+          ]
+        },
+        {
+          "id": 14, "type": "stat", "title": "Redémarrages conteneurs (24h)",
+          "gridPos": { "h": 4, "w": 5, "x": 19, "y": 14 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 1 },
+            { "color": "red", "value": 5 }
+          ] } } },
+          "options": { "colorMode": "background" },
+          "targets": [
+            { "expr": "sum(increase(kube_pod_container_status_restarts_total{namespace=\"projet-etude-app-demo\"}[24h]))", "refId": "A", "instant": true }
+          ]
+        },
+        {
+          "id": 15, "type": "timeseries", "title": "Saturation CPU cluster (par nœud)",
+          "gridPos": { "h": 7, "w": 12, "x": 0, "y": 18 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "unit": "percentunit", "max": 1 } },
+          "targets": [
+            { "expr": "1 - avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m]))", "legendFormat": "{{instance}}", "refId": "A" }
+          ]
+        },
+        {
+          "id": 16, "type": "timeseries", "title": "Saturation mémoire cluster (par nœud)",
+          "gridPos": { "h": 7, "w": 12, "x": 12, "y": 18 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "unit": "percentunit", "max": 1 } },
+          "targets": [
+            { "expr": "1 - (node_memory_MemAvailable_bytes / clamp_min(node_memory_MemTotal_bytes, 1))", "legendFormat": "{{instance}}", "refId": "A" }
+          ]
+        },
+
+        {
+          "id": 300, "type": "row", "title": "DORA — vélocité de livraison",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 25 }, "collapsed": false
+        },
+        {
+          "id": 20, "type": "stat", "title": "Deploys/semaine (Argo sync OK)",
+          "description": "Nombre de syncs ArgoCD terminés avec succès sur les 7 derniers jours, toutes apps confondues.",
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 26 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [
+            { "color": "red", "value": null },
+            { "color": "yellow", "value": 1 },
+            { "color": "green", "value": 5 }
+          ] } } },
+          "options": { "colorMode": "background" },
+          "targets": [
+            { "expr": "sum(increase(argocd_app_sync_total{phase=\"Succeeded\"}[7d]))", "refId": "A", "instant": true }
+          ]
+        },
+        {
+          "id": 21, "type": "stat", "title": "Change failure rate (7j)",
+          "description": "Syncs Argo en échec / total syncs. Proxy de DORA change-fail-rate.",
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 26 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "unit": "percentunit", "decimals": 1, "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 0.05 },
+            { "color": "red", "value": 0.15 }
+          ] } } },
+          "options": { "colorMode": "background" },
+          "targets": [
+            { "expr": "sum(increase(argocd_app_sync_total{phase=\"Failed\"}[7d])) / clamp_min(sum(increase(argocd_app_sync_total[7d])), 1)", "refId": "A", "instant": true }
+          ]
+        },
+        {
+          "id": 22, "type": "stat", "title": "Alertes critiques actives",
+          "description": "Proxy MTTR : nombre d'alertes critiques actuellement firing. Cible 0.",
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 26 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "red", "value": 1 }
+          ] } } },
+          "options": { "colorMode": "background" },
+          "targets": [
+            { "expr": "count(ALERTS{severity=\"critical\",alertstate=\"firing\"}) or vector(0)", "refId": "A", "instant": true }
+          ]
+        },
+        {
+          "id": 23, "type": "stat", "title": "Apps Argo synchronisées",
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 26 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "unit": "percentunit", "decimals": 2, "thresholds": { "mode": "absolute", "steps": [
+            { "color": "red", "value": null },
+            { "color": "yellow", "value": 0.9 },
+            { "color": "green", "value": 1 }
+          ] } } },
+          "options": { "colorMode": "background" },
+          "targets": [
+            { "expr": "count(argocd_app_info{sync_status=\"Synced\"}) / clamp_min(count(argocd_app_info), 1)", "refId": "A", "instant": true }
+          ]
+        },
+        {
+          "id": 24, "type": "timeseries", "title": "Syncs ArgoCD par phase (7j)",
+          "gridPos": { "h": 7, "w": 24, "x": 0, "y": 30 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            { "expr": "sum by (phase) (increase(argocd_app_sync_total[1h]))", "legendFormat": "{{phase}}", "refId": "A" }
+          ]
+        },
+
+        {
+          "id": 400, "type": "row", "title": "Green IT — énergie (Kepler)",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 37 }, "collapsed": false
+        },
+        {
+          "id": 30, "type": "stat", "title": "Énergie app demo (24h)",
+          "description": "Somme des joules conso par les conteneurs de l'app, convertis en Wh.",
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 38 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "unit": "watth", "decimals": 1 } },
+          "options": { "colorMode": "value" },
+          "targets": [
+            { "expr": "sum(increase(kepler_container_joules_total{container_namespace=\"projet-etude-app-demo\"}[24h])) / 3600", "refId": "A", "instant": true }
+          ]
+        },
+        {
+          "id": 31, "type": "stat", "title": "Énergie / requête (5m)",
+          "description": "Joules consommés / requête HTTP servie. Proxy d'éco-efficacité.",
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 38 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "unit": "none", "decimals": 3 } },
+          "options": { "colorMode": "value" },
+          "targets": [
+            { "expr": "sum(rate(kepler_container_joules_total{container_namespace=\"projet-etude-app-demo\"}[5m])) / clamp_min(sum(rate(http_requests_total{namespace=\"projet-etude-app-demo\"}[5m])), 0.001)", "refId": "A", "instant": true }
+          ]
+        },
+        {
+          "id": 32, "type": "stat", "title": "Puissance moyenne cluster",
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 38 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "unit": "watt", "decimals": 1 } },
+          "options": { "colorMode": "value" },
+          "targets": [
+            { "expr": "sum(rate(kepler_container_joules_total[5m]))", "refId": "A", "instant": true }
+          ]
+        },
+        {
+          "id": 33, "type": "stat", "title": "CO₂eq cluster (24h)",
+          "description": "Estimation basée sur 50 gCO2eq/kWh (mix France EDF). Ajuster si besoin.",
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 38 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "unit": "mass", "decimals": 2 } },
+          "options": { "colorMode": "value" },
+          "targets": [
+            { "expr": "sum(increase(kepler_container_joules_total[24h])) / 3600000 * 50", "refId": "A", "instant": true }
+          ]
+        },
+        {
+          "id": 34, "type": "timeseries", "title": "Top 5 namespaces — puissance instantanée",
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 42 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "unit": "watt" } },
+          "targets": [
+            { "expr": "topk(5, sum by (container_namespace) (rate(kepler_container_joules_total[5m])))", "legendFormat": "{{container_namespace}}", "refId": "A" }
+          ]
+        }
+      ]
+    }

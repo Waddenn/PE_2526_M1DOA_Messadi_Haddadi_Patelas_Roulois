@@ -28,6 +28,7 @@ resources:
 - dashboard.yaml
 - dashboard-slo.yaml
 - dashboard-worker.yaml
+- dashboard-kpi.yaml
 images:
 - name: ghcr.io/waddenn/projet-etude-app-demo-api
   digest: sha256:9b594e894d7297b2be14d2d40d7d4cf0af0a916760fadf7c6461769aa5a05ce5
