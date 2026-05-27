@@ -2,6 +2,9 @@ apiVersion: v1
 kind: Service
 metadata:
   name: projet-etude-app-demo
+  labels:
+    app.kubernetes.io/name: projet-etude-app-demo
+    app.kubernetes.io/component: api
 spec:
   type: ClusterIP
   selector:

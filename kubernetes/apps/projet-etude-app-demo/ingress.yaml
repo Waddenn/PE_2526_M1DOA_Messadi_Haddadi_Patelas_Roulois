@@ -13,6 +13,9 @@ kind: Ingress
 metadata:
   name: projet-etude-app-demo
   annotations:
+    # Traefik LB Service est <pending> (pas de MetalLB) : l'Ingress n'aura
+    # jamais d'ADDRESS, donc on dit à Argo CD de ne pas health-check ce kind.
+    argocd.argoproj.io/sync-options: SkipHealthCheck=true
     # Traefik k3s : entrypoint HTTP (web). Tailscale-serve gère le TLS en amont.
     traefik.ingress.kubernetes.io/router.entrypoints: web
     # Strip /app-demo avant de passer à l'app (qui sert tout depuis /).
