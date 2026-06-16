@@ -31,8 +31,8 @@ resources:
 - dashboard-kpi.yaml
 images:
 - name: ghcr.io/waddenn/projet-etude-app-demo-api
-  digest: sha256:a627b55b7fa300907335cef26d10ded1564b5f8d07b005c8938d82d34ee1aea9
+  digest: sha256:b3eac7cd59b17104dbd21616cb99b63f042ac773adbb12563ac89b06c2fa1f37
 - name: ghcr.io/waddenn/projet-etude-app-demo-worker
-  digest: sha256:3b906b96c49ca40c461df5345efbfe246adb427151ea25a193ccffc7c70069ad
+  digest: sha256:d958d623bbbef86f063bbcdb0263de7e2dd74184992d8a3e62bb6990eb18c35e
 - name: ghcr.io/waddenn/projet-etude-app-demo-audit-purge
   newTag: main
